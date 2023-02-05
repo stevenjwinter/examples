@@ -363,6 +363,7 @@ void useInterrupt(boolean v) {
 // converts lat/long from Adafruit
 // degree-minute format to decimal-degrees
 double convertDegMinToDecDeg (float degMin) {
+
   double min = 0.0;
   double decDeg = 0.0;
  
