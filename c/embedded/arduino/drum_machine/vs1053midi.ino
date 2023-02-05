@@ -1,7 +1,8 @@
 /*************************************************** 
-  This is an code for the Adafruit VS1053 Codec Breakout
+  This is a some very simple code for the drum machin
 
-  Designed specifically to work with the Adafruit VS1053 Codec Breakout 
+
+  Designed specifically to work with the VS1053 Codec Breakout 
 
  ****************************************************/
 
