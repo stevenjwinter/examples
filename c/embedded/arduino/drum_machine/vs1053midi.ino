@@ -1,15 +1,8 @@
 /*************************************************** 
-  This is an example for the Adafruit VS1053 Codec Breakout
+  This is an code for the Adafruit VS1053 Codec Breakout
 
   Designed specifically to work with the Adafruit VS1053 Codec Breakout 
-  ----> https://www.adafruit.com/products/1381
 
-  Adafruit invests time and resources providing this open source code, 
-  please support Adafruit and open-source hardware by purchasing 
-  products from Adafruit!
-
-  Written by Limor Fried/Ladyada for Adafruit Industries.  
-  BSD license, all text above must be included in any redistribution
  ****************************************************/
 
 #include <SoftwareSerial.h>
@@ -19,9 +12,6 @@
 #define VS1053_RX  2 // This is the pin that connects to the RX pin on VS1053
 
 #define VS1053_RESET 9 // This is the pin that connects to the RESET pin on VS1053
-// If you have the Music Maker shield, you don't need to connect the RESET pin!
-
-// If you're using the VS1053 breakout:
 // Don't forget to connect the GPIO #0 to GROUND and GPIO #1 pin to 3.3V
 // If you're using the Music Maker shield:
 // Don't forget to connect the GPIO #1 pin to 3.3V and the RX pin to digital #2
