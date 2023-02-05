@@ -15,10 +15,11 @@ Examples of work
 *Does the specific guideline matter? Probably not, just as long as the entire project and possibly the codebase is consistent.*
 
 ## Python
-Code should use virtual environment and coform to [google coding guidelines](https://google.github.io/styleguide/pyguide.html)
+Code should use virtual environment and coform to [pep8](https://peps.python.org/pep-0008/)
+black formatter plugin is useful for enforcing consistent formatting
 
 ## C#
-Code should corm to [microsoft coding standards](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions)
+Code should corform to [microsoft coding standards](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions)
 
 ## Java
 Code should conform to [a common coding guideline](https://www.geeksforgeeks.org/coding-guidelines-in-java/)
