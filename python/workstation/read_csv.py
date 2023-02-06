@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 
-# GLOBALS
+""" GLOBAL VARIABLES """
 CSV_FILE = 'python/workstation/data/booklist.csv'
 PRICE_COLUMN = 'price'
 PQT_FILE = 'python/workstation/data/booklist.pqt'
@@ -27,7 +27,7 @@ def print_stats(interesting_dataframe):
     num_rows = interesting_dataframe.shape[0]
     print('Number of rows:', num_rows)
 
-# main script 
+""" MAIN SCRIPT """
 check_for_file()
 
 try:
@@ -35,7 +35,7 @@ try:
     print(CsvFileDataFrame.head())
     print('done reading file\n------')
     print_stats(CsvFileDataFrame)
-    CsvFileDataFrame.to_parquet(PQT_FILE)
+    CsvFileDataFrame.to_parquet(PQT_FILE) # Super inflates required libraries
     print('done\n----')
 except IOError as io_error:
     print(io_error)
