@@ -1,4 +1,3 @@
-# Simple Examples of code
 ![github](https://img.shields.io/badge/GitHub-000000?style=for-the-badge&logo=GitHub&logoColor=white)
 ![gitlab](https://img.shields.io/badge/GitLab-330F63?style=for-the-badge&logo=gitlab&logoColor=white)
 
@@ -59,6 +58,8 @@
 
 *Does the specific guideline matter? Probably not, just as long as the entire project and possibly the codebase is consistent.*
 
+---
+# code examples and guidelines
 ## Python
 Code should use virtual environment and coform to [pep8](https://peps.python.org/pep-0008/)
 black formatter plugin is useful for enforcing consistent formatting
