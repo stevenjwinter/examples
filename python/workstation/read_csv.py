@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 
-# GLOBAL VARIABLES
+# GLOBAL VARIABLE NAME SPACE
 CSV_FILE = 'python/workstation/data/booklist.csv'
 PRICE_COLUMN = 'price'
 PQT_FILE = 'python/workstation/data/booklist.pqt'
