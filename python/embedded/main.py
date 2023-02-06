@@ -1,78 +1,82 @@
+""" 
+ This is an embedded script that uses the IO of the embedded controller 
+ to retrieve GPS and Particle data and write to SD CARD
+
+ It is still a work in progress and used only for development and testing.
+ 
+"""
+
 import os
 import time
-import board
-import busio
-import microcontroller
+
+import adafruit_gps
 import adafruit_pm25
 import adafruit_sdcard
-import microcontroller
 import board
 import busio
 import digitalio
-import storage
-import adafruit_gps
-from analogio import AnalogIn
-import board
-import busio
-from microcontroller import Pin
-from digitalio import DigitalInOut, Direction, Pull 
+import microcontroller
 import neopixel
+import storage
+from analogio import AnalogIn
+from digitalio import DigitalInOut, Direction, Pull
+from microcontroller import Pin
 
-doLogPin = DigitalInOut(board.D8)     
-doLogPin.direction = Direction.INPUT
-doLogPin.pull = Pull.UP
+
+# Set up logging
+LOGGING_CONTROL_PIN = DigitalInOut(board.D8)     
+LOGGING_CONTROL_PIN.direction = Direction.INPUT
+LOGGING_CONTROL_PIN.pull = Pull.UP
 
 # Grand Central default UART
-uart = busio.UART(board.TX, board.RX, baudrate=9600)
-i2c = busio.I2C(board.SCL, board.SDA)
+UART = busio.UART(board.TX, board.RX, baudrate=9600)
+I2C = busio.I2C(board.SCL, board.SDA)
 
 
 # Initilialize globals
-pm25   = None
-i2cGps = None
+PARTICLE_25   = None
+I2C_FOR_GPS = None
 
-pixels = neopixel.NeoPixel(board.NEOPIXEL, 1)
-pixels.brightness = 0.1
+NEOPIXEL = neopixel.NeoPixel(board.NEOPIXEL, 1)
+NEOPIXEL.brightness = 0.1
 
-lastLat = None
-lastLon = None
+LAST_LATITUDE = None
+LAST_LONGITUDE = None
 
-def pixelRed():
-    pixels[0] = (255, 0, 0)
-    pixels.show()
+def pixel_red():
+    NEOPIXEL[0] = (255, 0, 0)
+    NEOPIXEL.show()
 
-def pixelYellow():
-    pixels[0] = (255, 0, 0)
-    pixels.show()
+def pixel_yellow():
+    NEOPIXEL[0] = (255, 0, 0)
+    NEOPIXEL.show()
 
+def pixel_green():
+    NEOPIXEL[0] = (0, 255, 0)
+    NEOPIXEL.show()
 
-def pixelGreen():
-    pixels[0] = (0, 255, 0)
-    pixels.show()
+def pixel_blue():
+    NEOPIXEL[0] = (0, 0, 255)
+    NEOPIXEL.show()
 
-def pixelBlue():
-    pixels[0] = (0, 0, 255)
-    pixels.show()
+def pixel_black():
+    NEOPIXEL[0] = (0, 0, 0)
+    NEOPIXEL.show()
 
-def pixelBlack():
-    pixels[0] = (0, 0, 0)
-    pixels.show()
+def initialize_gps():
+    global I2C_FOR_GPS
 
-def InitGps():
-    global i2cGps
-
-
-    i2cGps = adafruit_gps.GPS_GtopI2C(i2c, debug=False) # Use I2C interface
+    I2C_FOR_GPS = adafruit_gps.GPS_GtopI2C(I2C, debug=False) # Use I2C interface
     print('I2C gps initialized')
 
-    i2cGps.send_command(b'PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0')
-    i2cGps.send_command(b"PMTK220,2000")
+    I2C_FOR_GPS.send_command(b'PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0')
+    I2C_FOR_GPS.send_command(b"PMTK220,2000")
 
     print('Done initializing GPS')
     time.sleep(2)
 
 
-def ReadGps(g):
+def read_gps(g):
     print('reading gps')
 
     ret = g.update()
@@ -88,15 +92,15 @@ def ReadGps(g):
         print('has fix')
 
     if ret == False:
-        Clear()
+        clear_lcd()
         data = g.read(32)  # read up to 32 bytes
         print(data)  # this is a bytearray type
-        WriteString('GPS update() fail')
+        lcd_write_string('GPS update() fail')
         print('gps update false, returning')
         return
 
-    Clear()
-    SetCursor(0,0)        
+    clear_lcd()
+    set_cursor_position(0,0)        
 
     if not g.has_fix:
         print('no fix')
@@ -127,38 +131,30 @@ def ReadGps(g):
         lat = ("{0:.1f}".format(g.latitude))
         lon = ("{0:.1f}".format(g.longitude))
         s = "{}, {}".format(lat, lon)
-        Clear()
+        clear_lcd()
         print(s)
         #WriteString(s)
         #WriteString(' ')
     
     if g.satellites is not None:
         print("{} Sats".format(g.satellites))
-        WriteString(g.satellites)
+        lcd_write_string(g.satellites)
     else:
         print('no satellites')
-        WriteString('0')
+        lcd_write_string('0')
  
 
 
 
  
 # Connect to the card and mount the filesystem.
-def InitSdCard():
+def initialize_sd_card():
     spi = busio.SPI(board.SD_SCK, board.SD_MOSI, board.SD_MISO)
     cs = digitalio.DigitalInOut(board.SD_CS)
     sdcard = adafruit_sdcard.SDCard(spi, cs)
     vfs = storage.VfsFat(sdcard)
     storage.mount(vfs, "/sd")
-
-print('Done setting up SD Card')
-# ---------------------------------------------
-
-
-
-
-
-
+    print('Done setting up SD Card')
 
 def print_directory(path, tabs=0):
     for file in os.listdir(path):
@@ -185,65 +181,62 @@ def print_directory(path, tabs=0):
         if isdir:
             print_directory(path + "/" + file, tabs + 1)
 
-
-
-
-def InitPm25():
+def initialize_particle_sensor():
     reset_pin = None
-    global pm25
-    pm25 = adafruit_pm25.PM25_UART(uart, reset_pin)
+    global PARTICLE_25
+    PARTICLE_25 = adafruit_pm25.PM25_UART(UART, reset_pin)
 
-def LcdCmd(b):
-    uart.write( bytearray(b) )
+def lcd_command(b):
+    UART.write( bytearray(b) )
     time.sleep(.01)
 
-def WriteString(text):
-    LcdCmd(text)
+def lcd_write_string(text):
+    lcd_command(text)
 
-def Clear():
-    LcdCmd([0xFE, 0x58])
+def clear_lcd():
+    lcd_command([0xFE, 0x58])
 
-def LcdOn():
-    LcdCmd([0xFE, 0x42, 0x00]) 
+def lcd_turn_on():
+    lcd_command([0xFE, 0x42, 0x00]) 
 
-def LcdOff():
-    LcdCmd([0xFE, 0x46]) 
+def lcd_turn_off():
+    lcd_command([0xFE, 0x46]) 
 
-def SetCursor(col, row):  # col, row starting at 1
-    LcdCmd([0xFE, 0x47, col, row])
+def set_cursor_position(col, row):  # col, row starting at 1
+    lcd_command([0xFE, 0x47, col, row])
 
-def BacklightWhite():
-    LcdCmd([0xFE, 0xD0, 0xFF, 0xFF, 0xFF])
+def backlight_white():
+    lcd_command([0xFE, 0xD0, 0xFF, 0xFF, 0xFF])
 
-def BacklightRed():
-    LcdCmd([0xFE, 0xD0, 0xFF, 0x0, 0x0])
+def backlight_red():
+    lcd_command([0xFE, 0xD0, 0xFF, 0x0, 0x0])
 
-def BacklightYellow():
-    LcdCmd([0xFE, 0xD0, 0xFF, 0xFF, 0x0])
+def backlight_yellow():
+    lcd_command([0xFE, 0xD0, 0xFF, 0xFF, 0x0])
 
-def BacklightGreen():
-    LcdCmd([0xFE, 0xD0, 0x0, 0x0F, 0x00])
+def backlight_green():
+    lcd_command([0xFE, 0xD0, 0x0, 0x0F, 0x00])
 
-def BacklightBlue():
-    LcdCmd([0xFE, 0xD0, 0x0, 0x00, 0xFF])
+def backlight_blue():
+    lcd_command([0xFE, 0xD0, 0x0, 0x00, 0xFF])
 
-def SetBrightness(b):
-    LcdCmd([0xFE, 0x99, b])
+def set_backlight_brightness(b):
+    lcd_command([0xFE, 0x99, b])
 
-def SetCursorHome():
-    LcdCmd([0xFE, 0x48])
+def set_cursor_to_home_position():
+    lcd_command([0xFE, 0x48])
 
-def TurnOnBacklight():
-    LcdCmd([0xFE, 0x42])
+def lcd_turn_backlight_on():
+    lcd_command([0xFE, 0x42])
 
-def WriteString(text):
+def lcd_write_string(text):
     ba = str(text)
-    LcdCmd(ba)
+    lcd_command(ba)
 
-def SetContrast(c):
-    LcdCmd([0xFE, 0x50, c])
+def lcd_set_contrast(c):
+    lcd_command([0xFE, 0x50, c])
 
-def PrintAQData(aqdata):
+def print_air_quality_data(aqdata):
     print()
     print("Concentration Units (standard)")
     print("---------------------------------------")
@@ -267,13 +260,13 @@ def PrintAQData(aqdata):
     print("---------------------------------------")
 
 
-def GetSmoke(aqdata):
+def get_air_smoke(aqdata):
     #print(type(aqdata["particles 03um"]))
     #return aqdata["particles 03um"]
     return aqdata["pm100 standard"]
 
 
-def LogToSdCard():
+def log_data_to_sd_card():
     with open("/sd/temperature.txt", "a") as file:
         temperature = microcontroller.cpu.temperature
         print("Temperature = %0.1f" % temperature)
@@ -282,36 +275,29 @@ def LogToSdCard():
     time.sleep(1)
 
 
-Clear()
-WriteString('PM Logger')
+clear_lcd()
+lcd_write_string('PM Logger')
 
-pixelRed()
+pixel_red()
 
-SetBrightness(150)
-SetContrast(150)
-BacklightWhite()
-LcdOn()
+set_backlight_brightness(150)
+lcd_set_contrast(150)
+backlight_white()
+lcd_turn_on()
 print('Init PM25')
-InitPm25()
+initialize_particle_sensor()
 print('Done init pm25')
 
-print(pm25)
+print(PARTICLE_25)
 
-InitSdCard()
-LogToSdCard()
+initialize_sd_card()
+log_data_to_sd_card()
 print('wrote to sd card')
 
-InitGps()
+initialize_gps()
+pixel_green()
 
-pixelGreen()
-
-print("Files on filesystem:")
-print("====================")
-#print_directory("/sd")
-
-
-
-def LogInfoToSdCard(timestr, lat, lon, part):
+def log_info_to_sd_card(timestr, lat, lon, part):
     # add feedback (led?)
     with open("/sd/log.csv", "a") as file:
         #file.write("%0.1f\n" % temperature)
@@ -320,8 +306,7 @@ def LogInfoToSdCard(timestr, lat, lon, part):
     time.sleep(1)
 
 
-def testGps(gps):
-
+def test_gps(gps):
     gps.update()
     # Every second print out current location details if there's a fix.
     if not gps.has_fix:
@@ -362,47 +347,47 @@ def testGps(gps):
 
 while True:
 
-    pixelBlue()
+    pixel_blue()
     try:
-        i2cGps.update()
-        i2cGps.update()
-        i2cGps.update()
-        i2cGps.update()
+        I2C_FOR_GPS.update()
+        I2C_FOR_GPS.update()
+        I2C_FOR_GPS.update()
+        I2C_FOR_GPS.update()
     except:
         print('Error with GPS')
-        pixelRed()
+        pixel_red()
         continue
 
-    pixelGreen()
+    pixel_green()
     try:
-        ReadGps(i2cGps)    
+        read_gps(I2C_FOR_GPS)    
     except:
         print('error reading gps')
-        Clear()
-        WriteString('Error Read GPS')
-        pixelRed()
+        clear_lcd()
+        lcd_write_string('Error Read GPS')
+        pixel_red()
         continue
 
-    g = i2cGps
+    g = I2C_FOR_GPS
 
     if g is None or g.timestamp_utc is None:
-        Clear()
+        clear_lcd()
         print("Can't read gps object")
-        WriteString('No GPS or GPS time')
-        pixelRed()
+        lcd_write_string('No GPS or GPS time')
+        pixel_red()
         continue
     
     if g.latitude is None or g.longitude is None:
         print("Can't read gps object")
-        Clear()
+        clear_lcd()
         print("Can't read gps position")
-        WriteString('No GPS position')
-        pixelRed()
+        lcd_write_string('No GPS position')
+        pixel_red()
         continue
 
     if int(g.timestamp_utc.tm_mon)  == 0 or int(g.timestamp_utc.tm_mday) == 0 or int(g.timestamp_utc.tm_year) == 0 or int(g.timestamp_utc.tm_hour) == 0:
         print('Invalid time, skipping')
-        Clear()
+        clear_lcd()
         continue
     else:
         try:
@@ -413,11 +398,11 @@ while True:
             minute = int(g.timestamp_utc.tm_min)
         except:
             print("Can't read gps object")
-            pixelRed()
+            pixel_red()
             continue
 
-    LcdOn()
-    pixelGreen()
+    lcd_turn_on()
+    pixel_green()
     timeString = "{:04d}/{:02d}/{:02d} {:02d}:{:02d}".format(year, month, day, hour, minute)
     showTimeString = "{:02d}:{:02d} utc".format(hour, minute)
     print(timeString)
@@ -426,40 +411,40 @@ while True:
     ltd = ("{0:.3f}".format(g.latitude))
     lng = ("{0:.3f}".format(g.longitude))
 
-    SetCursor(1,1)
-    WriteString("GPS {} sats".format(g.satellites))
-    SetCursor(1,2)
-    WriteString("{},{}".format(ltd, lng))
+    set_cursor_position(1,1)
+    lcd_write_string("GPS {} sats".format(g.satellites))
+    set_cursor_position(1,2)
+    lcd_write_string("{},{}".format(ltd, lng))
     time.sleep(1.0)
 
-    SetCursor(1,1)
-    WriteString("                ");
-    SetCursor(1,1)
-    WriteString(showTimeString)
+    set_cursor_position(1,1)
+    lcd_write_string("                ");
+    set_cursor_position(1,1)
+    lcd_write_string(showTimeString)
 
-    aqdata = pm25.read()
-    smoke = GetSmoke(aqdata) 
+    aqdata = PARTICLE_25.read()
+    smoke = get_air_smoke(aqdata) 
     print("{},{},{},{}".format(timeString, ltd, lng, smoke))
 
-    if doLogPin.value:
+    if LOGGING_CONTROL_PIN.value:
         print('NOT logging')
     else:  # Logging
-        if lastLat is None:
-            lastLat = ltd
-            lastLon = lng
-            pixelBlue()
+        if LAST_LATITUDE is None:
+            LAST_LATITUDE = ltd
+            LAST_LONGITUDE = lng
+            pixel_blue()
             print('logging first time')
-            SetCursor(1,1)
-            WriteString('Writing 1st log ')
-            LogInfoToSdCard(timeString, ltd, lng, smoke)
-        elif lastLat is not None and lastLat != ltd and lastLon != lng:
-            pixelBlue()
+            set_cursor_position(1,1)
+            lcd_write_string('Writing 1st log ')
+            log_info_to_sd_card(timeString, ltd, lng, smoke)
+        elif LAST_LATITUDE is not None and LAST_LATITUDE != ltd and LAST_LONGITUDE != lng:
+            pixel_blue()
             print('logging')
-            SetCursor(1,1)
-            WriteString('Writing log...')
-            LogInfoToSdCard(timeString, ltd, lng, smoke)
-            lastLat = ltd
-            lastLon = lng
+            set_cursor_position(1,1)
+            lcd_write_string('Writing log...')
+            log_info_to_sd_card(timeString, ltd, lng, smoke)
+            LAST_LATITUDE = ltd
+            LAST_LONGITUDE = lng
         else: # just skip same location
             print('not logging, same or missing')
 
@@ -467,9 +452,9 @@ while True:
 
     s = str('Particles: {}   '.format(smoke))  # sjw: clear one line?
     print(s)
-    SetCursor(1,2)
-    WriteString(s)
+    set_cursor_position(1,2)
+    lcd_write_string(s)
 
-    pixelBlack()
+    pixel_black()
     time.sleep(2.0)
-    pixelGreen()
+    pixel_green()
