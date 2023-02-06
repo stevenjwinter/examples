@@ -51,12 +51,14 @@
 ![RASPBERRY_PI](https://img.shields.io/badge/Raspberry%20Pi-A22846?style=for-the-badge&logo=Raspberry%20Pi&logoColor=white)
 
 ---
-## Coding guidelines
+## Coding practices
 - Make code consistent
 - Make code readable
 - Use commonly accepted guidelines
 
 *Does the specific guideline matter? Probably not, just as long as the entire project and possibly the codebase is consistent.*
+
+*The code and the repository should be intuitive and consistent with any other repositories and code*
 
 ---
 # code examples and guidelines
