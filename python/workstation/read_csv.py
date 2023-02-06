@@ -2,6 +2,7 @@
 import os
 import pandas as pd
 
+
 # GLOBAL VARIABLE NAME SPACE
 CSV_FILE = 'python/workstation/data/booklist.csv'
 PRICE_COLUMN = 'price'
