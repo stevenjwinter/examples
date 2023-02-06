@@ -61,7 +61,7 @@
 ---
 # code examples and guidelines
 ## Python
-Code should use virtual environment and coform to [pep8](https://peps.python.org/pep-0008/)
+Code should use [virtual environment](https://docs.python.org/3/library/venv.html) and coform to [pep8](https://peps.python.org/pep-0008/)
 black formatter plugin is useful for enforcing consistent formatting
 
 ## C#
