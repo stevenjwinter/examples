@@ -16,14 +16,15 @@ These are just, for the most part, read only.
 
 ### Executing program
 
-* The Workstation example will need to be run in a virtual environment to avoid pollutin the python module space
+* The Workstation example will need to be run in a virtual environment to avoid pollutin the python module space. The requirements.txt is included in the repository.
+
 * The embdeded example needs to be run on a mircrocontroller using Circuit Python
-```
 
+---
 ## Authors
+(tbd)
 
-
-
+---
 ## Version History
-
+(na)
 
